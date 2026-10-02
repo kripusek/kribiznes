@@ -1,0 +1,8 @@
+.env
+data
+__pycache__
+tests
+*.zip
+*.sqlite3*
+demo-data
+backups

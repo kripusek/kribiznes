@@ -1,0 +1,125 @@
+{
+  "_comment": "Generated KriBusiness egg. Import into Pelican. PTDL_v2 compatibility format.",
+  "meta": {
+    "version": "PLCN_v3",
+    "update_url": null
+  },
+  "exported_at": "2026-10-02T12:00:00+00:00",
+  "name": "KriBusiness - Classroom Business Simulator",
+  "author": "kripusek@users.noreply.github.com",
+  "description": "Original classroom simulation. Python + SQLite; no pip dependencies. Upload project files to server root or set a Git URL (private GitHub supported with GIT_TOKEN). Set ADMIN_PASSWORD before first start.",
+  "features": [],
+  "docker_images": {
+    "Python 3.12": "ghcr.io/parkervcp/yolks:python_3.12"
+  },
+  "file_denylist": [],
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": \"KriBusiness ready on\"}",
+    "logs": "{}",
+    "stop": "^SIGTERM"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -euo pipefail\nmkdir -p /mnt/server\ncd /mnt/server\nif [ -z \"${GIT_REPOSITORY:-}\" ]; then\n echo \"Manual installation: upload app.py, engine.py and static/ to the server root before starting.\"\n exit 0\nfi\ncase \"$GIT_REPOSITORY\" in https://*) ;; *) echo \"Only public HTTPS Git URLs are supported\"; exit 1;; esac\nif [ -f /mnt/server/app.py ]; then\n echo \"Existing application preserved. Upload updates manually; database is never deleted.\"\n exit 0\nfi\napt-get update\napt-get install -y --no-install-recommends git ca-certificates\nproject_temp=$(mktemp -d)\ntrap 'rm -rf \"$project_temp\"' EXIT\nif [ -n \"${GIT_TOKEN:-}\" ]; then\n case \"$GIT_REPOSITORY\" in https://github.com/*) ;; *) echo \"Private token is supported only for github.com\"; exit 1;; esac\n cat > \"$project_temp/askpass\" <<'ASKPASS'\n#!/bin/sh\ncase \"$1\" in\n *Username*) printf '%s\\n' 'x-access-token' ;;\n *Password*) printf '%s\\n' \"$GIT_TOKEN\" ;;\n *) exit 1 ;;\nesac\nASKPASS\n chmod 700 \"$project_temp/askpass\"\n export GIT_ASKPASS=\"$project_temp/askpass\"\nfi\nexport GIT_TERMINAL_PROMPT=0\ngit -c credential.helper= clone --depth 1 --single-branch --branch \"${GIT_BRANCH:-main}\" -- \"$GIT_REPOSITORY\" \"$project_temp/source\"\ntest -f \"$project_temp/source/app.py\"\ntest -f \"$project_temp/source/engine.py\"\ntest -d \"$project_temp/source/static\"\ncp \"$project_temp/source/app.py\" \"$project_temp/source/engine.py\" /mnt/server/\ncp -R \"$project_temp/source/static\" /mnt/server/\nif [ -f \"$project_temp/source/manage.py\" ]; then cp \"$project_temp/source/manage.py\" /mnt/server/; fi\necho \"KriBusiness installation complete\"\n",
+      "container": "debian:bookworm-slim",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Admin login",
+      "description": "Login administratora tworzony przy pierwszym starcie.",
+      "env_variable": "ADMIN_USERNAME",
+      "default_value": "admin",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": [
+        "required",
+        "string",
+        "min:3",
+        "max:40"
+      ],
+      "sort": 1
+    },
+    {
+      "name": "Admin password",
+      "description": "Ustaw własne hasło. Zmienna nie resetuje istniejącego konta. Minimum 12 znaków.",
+      "env_variable": "ADMIN_PASSWORD",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": [
+        "required",
+        "string",
+        "min:12",
+        "max:256"
+      ],
+      "sort": 2
+    },
+    {
+      "name": "HTTPS cookies",
+      "description": "true za reverse proxy z HTTPS; false przy lokalnym HTTP.",
+      "env_variable": "COOKIE_SECURE",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": [
+        "required",
+        "in:true,false"
+      ],
+      "sort": 3
+    },
+    {
+      "name": "Git repository (optional)",
+      "description": "Adres HTTPS repo z app.py w katalogu głównym. Prywatny GitHub wymaga GIT_TOKEN. Puste: prześlij pliki ręcznie.",
+      "env_variable": "GIT_REPOSITORY",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": [
+        "nullable",
+        "string",
+        "max:300"
+      ],
+      "sort": 4
+    },
+    {
+      "name": "Private repository token (optional)",
+      "description": "Opcjonalny token GitHub z dostępem Contents: read do tego prywatnego repo. Wpisz w panelu, nigdy w URL repo.",
+      "env_variable": "GIT_TOKEN",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": [
+        "nullable",
+        "string",
+        "max:512"
+      ],
+      "sort": 5
+    },
+    {
+      "name": "Repository branch",
+      "description": "Gałąź repozytorium dla instalacji automatycznej.",
+      "env_variable": "GIT_BRANCH",
+      "default_value": "main",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": [
+        "required",
+        "string",
+        "max:80"
+      ],
+      "sort": 6
+    }
+  ],
+  "uuid": "5c8c4515-2d10-4754-a976-a9af08d5c31f",
+  "tags": [
+    "education",
+    "business",
+    "python"
+  ],
+  "startup_commands": {
+    "Default": "python -u app.py"
+  }
+}
